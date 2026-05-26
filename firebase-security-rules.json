@@ -1,0 +1,93 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": ["role", "department", "active"],
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'role', 'active', 'createdAt'])",
+        "email":       { ".validate": "newData.isString() && newData.val().matches(/^[^@]+@[^@]+\\.[^@]+$/)" },
+        "displayName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 100" },
+        "role":        { ".validate": "newData.isString() && newData.val().matches(/^(admin|manager|staff)$/)" },
+        "department":  { ".validate": "newData.isString() || newData.val() == null" },
+        "active":      { ".validate": "newData.isBoolean()" },
+        "createdAt":   { ".validate": "newData.isNumber()" },
+        "lastLogin":   { ".validate": "newData.isNumber() || newData.val() == null" },
+        "$other":      { ".validate": false }
+      }
+    },
+
+    "documents": {
+      ".read": "auth != null",
+      ".indexOn": ["category", "visibility", "department", "uploadedAt", "uploadedBy"],
+      "$docId": {
+        ".read": "auth != null && (data.child('visibility').val() === 'public' || (data.child('visibility').val() === 'internal' && root.child('users').child(auth.uid).child('active').val() === true) || (data.child('visibility').val() === 'restricted' && root.child('users').child(auth.uid).child('role').val().matches(/^(admin|manager)$/)) || (data.child('visibility').val() === 'confidential' && root.child('users').child(auth.uid).child('role').val() === 'admin') || (data.child('visibility').val() === 'department' && root.child('users').child(auth.uid).child('department').val() === data.child('department').val()))",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('users').child(auth.uid).child('role').val() === 'manager' && (!data.exists() || data.child('uploadedBy').val() === auth.uid)))",
+        ".validate": "newData.hasChildren(['name', 'type', 'size', 'category', 'visibility', 'storagePath', 'uploadedBy', 'uploadedAt'])",
+        "name":        { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 300" },
+        "type":        { ".validate": "newData.isString()" },
+        "size":        { ".validate": "newData.isNumber() && newData.val() <= 104857600" },
+        "category":    { ".validate": "newData.isString() && newData.val().length < 100" },
+        "visibility":  { ".validate": "newData.isString() && newData.val().matches(/^(public|internal|restricted|confidential|department)$/)" },
+        "department":  { ".validate": "newData.isString() || newData.val() == null" },
+        "storagePath": { ".validate": "newData.isString()" },
+        "uploadedBy":  { ".validate": "newData.isString() && newData.val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'" },
+        "uploadedAt":  { ".validate": "newData.isNumber()" },
+        "description": { ".validate": "newData.isString() || newData.val() == null" },
+        "downloads":   { ".validate": "newData.isNumber()" },
+        "$other":      { ".validate": false }
+      }
+    },
+
+    "audit": {
+      ".read":  "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": ["userId", "action", "timestamp", "targetId"],
+      "$logId": {
+        ".write":    "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['action', 'userId', 'timestamp'])",
+        "action":    { ".validate": "newData.isString() && newData.val().matches(/^(login|logout|upload|view|download|delete|update|create_user|update_user|role_change)$/)" },
+        "userId":    { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "userEmail": { ".validate": "newData.isString()" },
+        "targetId":  { ".validate": "newData.isString() || newData.val() == null" },
+        "targetName":{ ".validate": "newData.isString() || newData.val() == null" },
+        "timestamp": { ".validate": "newData.isNumber() && newData.val() <= now + 60000 && newData.val() >= now - 60000" },
+        "userAgent": { ".validate": "newData.isString() || newData.val() == null" },
+        "details":   { ".validate": "newData.isString() || newData.val() == null" },
+        "$other":    { ".validate": false }
+      }
+    },
+
+    "departments": {
+      ".read":  "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$deptId": {
+        ".validate": "newData.hasChildren(['name'])",
+        "name":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 100" },
+        "nameEn": { ".validate": "newData.isString() || newData.val() == null" },
+        "head":   { ".validate": "newData.isString() || newData.val() == null" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "categories": {
+      ".read":  "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val().matches(/^(admin|manager)$/)",
+      "$catId": {
+        ".validate": "newData.hasChildren(['name'])",
+        "name":  { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 100" },
+        "icon":  { ".validate": "newData.isString() || newData.val() == null" },
+        "color": { ".validate": "newData.isString() || newData.val() == null" },
+        "$other":{ ".validate": false }
+      }
+    },
+
+    "settings": {
+      ".read":  "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    }
+  }
+}

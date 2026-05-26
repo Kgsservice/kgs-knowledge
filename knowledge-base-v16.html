@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Khammany General Service | Knowledge Management v16</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --navy:#0C1829;--navy-mid:#1A2942;--navy-light:#2A3D5C;
+  --blue:#1750A0;--blue-mid:#2563B5;--blue-pale:#EBF2FB;
+  --gold:#C49A28;--green:#1A7340;--green-bg:#E6F4EB;
+  --red:#C53030;--red-bg:#FEE2E2;--amber:#D97706;--amber-bg:#FEF3C7;
+  --purple:#7E22CE;--purple-bg:#F3E8FF;
+  --bg:#F7F8FA;--bg-white:#FFFFFF;--border:#E5E7EB;--border-mid:#D1D5DB;
+  --text:#0F172A;--text-mid:#475569;--text-light:#94A3B8;--text-mute:#CBD5E1;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+  --shadow:0 2px 8px rgba(15,23,42,.08);
+  --shadow-lg:0 8px 24px rgba(15,23,42,.12);
+  --radius:8px;--radius-lg:12px;--radius-xl:16px;
+  --font-lao:'Noto Sans Lao','Phetsarath OT',sans-serif;
+  --font-en:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:var(--font-lao);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── LOADER ── */
+.page-loader{position:fixed;inset:0;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+.ld-emblem{width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:36px;color:#fff;margin-bottom:24px;box-shadow:0 8px 32px rgba(23,80,160,.4)}
+.ld-title{font-size:20px;font-weight:600;letter-spacing:.5px;margin-bottom:6px}
+.ld-sub{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:32px;font-family:var(--font-en)}
+.ld-spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOASTS ── */
+#toasts{position:fixed;top:20px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;max-width:360px}
+.toast{background:#fff;border-radius:var(--radius-lg);padding:12px 16px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px;border-left:4px solid var(--blue);animation:slideIn .25s;font-size:13px;min-width:260px}
+.toast.ok{border-color:var(--green)}.toast.err{border-color:var(--red)}.toast.warn{border-color:var(--amber)}
+.toast i{font-size:18px}
+.toast.ok i{color:var(--green)}.toast.err i{color:var(--red)}.toast.warn i{color:var(--amber)}
+.toast:not(.ok):not(.err):not(.warn) i{color:var(--blue)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+/* ── MODAL/OVERLAY ── */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius-xl);padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow-lg)}
+.modal-hd{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
+.modal-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.modal-ttl{font-size:16px;font-weight:600;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--text-mid)}
+.modal-act{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;border:1.5px solid transparent;transition:all .15s;min-height:40px;white-space:nowrap}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-mid)}
+.btn-ghost{background:transparent;color:var(--text-mid);border-color:var(--border)}
+.btn-ghost:hover{background:var(--bg);border-color:var(--border-mid)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#A52828}
+.btn-sm{padding:6px 12px;min-height:32px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── LOGIN ── */
+#login-page{display:none;min-height:100vh;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+#login-page::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(196,154,40,.08),transparent 70%);top:-200px;right:-200px;border-radius:50%}
+#login-page::after{content:'';position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(23,80,160,.12),transparent 70%);bottom:-150px;left:-150px;border-radius:50%}
+.lg-card{background:#fff;border-radius:24px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;z-index:1}
+.lg-emblem{width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;margin:0 auto 20px}
+.lg-org{font-size:18px;font-weight:700;text-align:center;color:var(--text);margin-bottom:4px}
+.lg-sys{font-size:11px;text-align:center;color:var(--text-light);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--font-en);margin-bottom:24px}
+.lg-div{height:1px;background:var(--border);margin:0 -36px 24px}
+.lg-notice{background:var(--blue-pale);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;border:1px solid #DBEAFE}
+.lg-notice i{color:var(--blue);font-size:18px;flex-shrink:0;margin-top:2px}
+.lg-notice p{font-size:12px;color:var(--text-mid);line-height:1.55}
+.lg-field{position:relative;margin-bottom:14px}
+.lg-field .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-light);font-size:14px;pointer-events:none}
+.lg-ctrl{width:100%;height:46px;border:1.5px solid var(--border);border-radius:var(--radius);padding:0 16px 0 42px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);transition:all .15s}
+.lg-ctrl:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(23,80,160,.12)}
+.lg-field-link{text-align:right;margin-top:-8px;margin-bottom:16px}
+.lg-field-link a{font-size:12px;color:var(--blue);text-decoration:none;cursor:pointer}
+.lg-field-link a:hover{text-decoration:underline}
+.lg-btn{width:100%;height:46px;border-radius:var(--radius);background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.lg-btn:hover{background:var(--blue-mid)}
+.lg-btn:disabled{opacity:.6;cursor:wait}
+.lg-err{margin-top:14px;padding:10px 14px;background:var(--red-bg);color:var(--red);border-radius:var(--radius);font-size:12px;display:none}
+.lg-err.show{display:block}
+.lg-back{text-align:center;margin-top:18px;font-size:12px}
+.lg-back a{color:var(--text-light);cursor:pointer;text-decoration:none}
+.lg-back a:hover{color:var(--blue)}
+
+/* ── APP LAYOUT ── */
+#app{display:none;min-height:100vh}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+.sb-overlay.open{display:block}
+.sidebar{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--navy);color:#fff;display:flex;flex-direction:column;z-index:100;transition:transform .25s}
+.sb-brand{padding:22px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-emblem{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sb-name{font-size:14px;font-weight:600;line-height:1.3;color:#fff}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;font-family:var(--font-en);margin-top:2px}
+.sb-nav{flex:1;overflow-y:auto;padding:14px 12px}
+.sb-sec{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1.5px;text-transform:uppercase;padding:14px 8px 6px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);color:rgba(255,255,255,.75);font-size:13px;font-family:inherit;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;transition:all .15s;margin-bottom:2px}
+.nav-item i{font-size:14px;width:18px;text-align:center}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.active{background:var(--blue);color:#fff}
+.nav-badge{margin-left:auto;font-size:10px;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:10px;font-weight:600}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.25)}
+.nav-div{height:1px;background:rgba(255,255,255,.08);margin:10px 8px}
+.sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.u-chip{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#fff;flex-shrink:0}
+.u-chip.admin{background:var(--red)}.u-chip.manager{background:var(--gold)}.u-chip.staff{background:var(--green)}.u-chip.pub{background:var(--text-light)}
+.u-info{flex:1;min-width:0}
+.u-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-tag{font-size:9.5px;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);letter-spacing:.5px;font-weight:600;text-transform:uppercase;display:inline-block;margin-top:2px}
+.u-tag.admin{background:rgba(197,48,48,.25);color:#FCA5A5}
+.u-tag.manager{background:rgba(196,154,40,.25);color:#FCD34D}
+.u-tag.staff{background:rgba(26,115,64,.25);color:#86EFAC}
+.sb-logout{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;padding:8px;border-radius:8px;font-size:14px;transition:all .15s}
+.sb-logout:hover{background:rgba(255,255,255,.08);color:#fff}
+
+.main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column}
+.top-hdr{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.hamburger{display:none;background:none;border:none;font-size:20px;color:var(--text-mid);cursor:pointer;padding:6px 8px}
+.hdr-info{flex:1;min-width:0}
+.hdr-title{font-size:17px;font-weight:600;color:var(--text)}
+.hdr-crumb{font-size:11.5px;color:var(--text-light);margin-top:1px}
+.hdr-sep{width:1px;height:24px;background:var(--border)}
+.search-bar{flex:0 1 320px;position:relative}
+.search-bar i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-light);font-size:13px}
+.search-bar input{width:100%;height:38px;border:1px solid var(--border);border-radius:var(--radius);padding:0 14px 0 38px;font-size:13px;font-family:inherit;background:var(--bg);transition:all .15s}
+.search-bar input:focus{outline:none;border-color:var(--blue);background:#fff}
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.rt-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:600;background:var(--green-bg);color:var(--green)}
+.rt-badge.off{background:#FEF3C7;color:#92400E}
+.rt-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+.content{flex:1;padding:24px}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden}
+.card-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-ttl{font-size:14px;font-weight:600;color:var(--text)}
+.card-body{padding:20px}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:var(--radius-lg);padding:18px;border:1px solid var(--border);display:flex;align-items:center;gap:14px;box-shadow:var(--shadow-sm);transition:all .15s}
+.stat-card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.stat-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.si-blue{background:var(--blue-pale);color:var(--blue)}
+.si-gold{background:#FEF3C7;color:var(--gold)}
+.si-green{background:var(--green-bg);color:var(--green)}
+.si-red{background:var(--red-bg);color:var(--red)}
+.si-purple{background:var(--purple-bg);color:var(--purple)}
+.stat-val{font-size:20px;font-weight:700;color:var(--text);font-family:var(--font-en)}
+.stat-lbl{font-size:11px;color:var(--text-light);margin-top:2px}
+
+/* ── FILTER PILLS ── */
+.filter-row{display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding-bottom:6px}
+.pill{padding:7px 14px;border-radius:18px;border:1px solid var(--border);background:#fff;font-size:12.5px;color:var(--text-mid);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.pill:hover{border-color:var(--blue);color:var(--blue)}
+.pill.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pill-n{background:rgba(0,0,0,.08);padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600}
+.pill.active .pill-n{background:rgba(255,255,255,.25)}
+
+/* ── DOC LIST ── */
+.doc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;padding:18px}
+.doc-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:10px}
+.doc-card:hover{border-color:var(--blue);box-shadow:var(--shadow);transform:translateY(-2px)}
+.doc-top{display:flex;align-items:flex-start;gap:12px}
+.doc-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.fi-pdf{background:var(--red-bg);color:var(--red)}
+.fi-img{background:var(--purple-bg);color:var(--purple)}
+.fi-doc{background:var(--blue-pale);color:var(--blue)}
+.fi-xls{background:var(--green-bg);color:var(--green)}
+.fi-other{background:#F1F5F9;color:var(--text-mid)}
+.doc-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.doc-meta{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:11px;color:var(--text-light)}
+.doc-meta span{display:inline-flex;align-items:center;gap:4px}
+.doc-vis{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:.4px;align-self:flex-start}
+.vis-public{background:var(--green-bg);color:var(--green)}
+.vis-internal{background:var(--blue-pale);color:var(--blue)}
+.vis-restricted{background:#FEF3C7;color:var(--amber)}
+.vis-confidential{background:var(--red-bg);color:var(--red)}
+.vis-department{background:var(--purple-bg);color:var(--purple)}
+
+.empty{padding:48px 24px;text-align:center;color:var(--text-light)}
+.empty i{font-size:42px;opacity:.4;margin-bottom:14px}
+.empty h3{font-size:14px;font-weight:600;color:var(--text-mid);margin-bottom:6px}
+.empty p{font-size:12px;color:var(--text-light)}
+
+/* ── FORMS ── */
+.form-grp{margin-bottom:16px}
+.form-lbl{display:block;font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:6px}
+.form-lbl .req{color:var(--red)}
+.form-ctrl{width:100%;height:40px;border:1.5px solid var(--border);border-radius:var(--radius);padding:0 12px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;transition:all .15s}
+.form-ctrl:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,80,160,.1)}
+textarea.form-ctrl{height:auto;padding:10px 12px;min-height:80px;resize:vertical;line-height:1.5}
+select.form-ctrl{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;-webkit-appearance:none;appearance:none}
+.form-hint{font-size:11px;color:var(--text-light);margin-top:4px}
+
+/* ── UPLOAD ── */
+.upzone{border:2px dashed var(--border-mid);border-radius:var(--radius-lg);padding:36px 20px;text-align:center;background:var(--bg);cursor:pointer;transition:all .15s}
+.upzone:hover,.upzone.drag-over{border-color:var(--blue);background:var(--blue-pale)}
+.upzone i{font-size:38px;color:var(--text-light);margin-bottom:12px}
+.upzone h3{font-size:14px;color:var(--text);margin-bottom:6px}
+.upzone p{font-size:12px;color:var(--text-light)}
+.upqueue{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.upitem{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);font-size:12.5px}
+.upitem-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.upitem-info{flex:1;min-width:0}
+.upitem-name{font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upitem-size{font-size:11px;color:var(--text-light);margin-top:2px}
+.upitem-rm{background:none;border:none;color:var(--text-light);cursor:pointer;padding:6px;border-radius:6px}
+.upitem-rm:hover{background:var(--red-bg);color:var(--red)}
+.upbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px}
+.upbar-fill{height:100%;background:var(--blue);width:0;transition:width .2s}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th{background:var(--bg);padding:12px 14px;text-align:left;font-weight:600;color:var(--text-mid);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.tbl td{padding:14px;border-bottom:1px solid var(--border);color:var(--text)}
+table.tbl tr:hover td{background:var(--bg)}
+.tbl-act{display:flex;gap:6px}
+.tbl-act button{background:none;border:1px solid var(--border);border-radius:6px;width:30px;height:30px;cursor:pointer;color:var(--text-mid);font-size:12px;transition:all .15s}
+.tbl-act button:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-pale)}
+.tbl-act button.dl:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.tbl-act button.del:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+
+/* ── VIEW PAGE ── */
+.view-hdr{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+.view-fi{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.view-title{font-size:18px;font-weight:600;color:var(--text);margin-bottom:6px;word-break:break-word}
+.view-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-light)}
+.view-mi{display:inline-flex;align-items:center;gap:5px}
+.view-desc{margin-top:14px;padding:14px;background:var(--bg);border-radius:var(--radius);font-size:13px;color:var(--text-mid);line-height:1.6}
+.view-loading{text-align:center;padding:40px 20px;color:var(--text-light)}
+.view-loading i{font-size:32px;margin-bottom:12px}
+.pdf-page-wrap{position:relative;width:100%;box-shadow:0 1px 6px rgba(0,0,0,.12);border-radius:6px;overflow:hidden;background:#f5f5f5;margin-bottom:6px}
+.pdf-page-wrap canvas{display:block;width:100%!important;height:auto!important}
+.pdf-page-num{position:absolute;bottom:8px;right:10px;background:rgba(0,0,0,.45);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px}
+.prev-img{max-width:100%;display:block;margin:0 auto;border-radius:6px}
+
+/* ── BADGES ── */
+.role-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px}
+.role-admin{background:var(--red-bg);color:var(--red)}
+.role-manager{background:#FEF3C7;color:var(--amber)}
+.role-staff{background:var(--green-bg);color:var(--green)}
+.status-active{background:var(--green-bg);color:var(--green);padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.status-inactive{background:#F1F5F9;color:var(--text-light);padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+
+/* ── AUDIT LOG ── */
+.audit-row{display:grid;grid-template-columns:120px 1fr auto;gap:14px;padding:12px 14px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center}
+.audit-row:last-child{border-bottom:none}
+.audit-time{color:var(--text-light);font-size:11px;font-family:var(--font-en)}
+.audit-act{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.audit-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px}
+.act-login{background:var(--green-bg);color:var(--green)}
+.act-logout{background:#F1F5F9;color:var(--text-mid)}
+.act-upload{background:var(--blue-pale);color:var(--blue)}
+.act-download{background:var(--purple-bg);color:var(--purple)}
+.act-view{background:#F1F5F9;color:var(--text-mid)}
+.act-delete{background:var(--red-bg);color:var(--red)}
+.act-update{background:#FEF3C7;color:var(--amber)}
+.act-create_user{background:var(--blue-pale);color:var(--blue)}
+.act-role_change{background:#FEF3C7;color:var(--amber)}
+
+/* ── PROGRESS BAR ── */
+.progress-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-top:12px}
+.progress-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px}
+.progress-name{color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.progress-pct{color:var(--text-light);font-family:var(--font-en);font-weight:600}
+
+/* ── MOBILE ── */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none;box-shadow:var(--shadow-lg)}
+  .main{margin-left:0}
+  .hamburger{display:block}
+  .hdr-sep,.search-bar{display:none}
+  .content{padding:16px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat-val{font-size:17px}
+  .stat-ico{width:38px;height:38px;font-size:16px}
+  .doc-list{padding:14px}
+  .audit-row{grid-template-columns:1fr;gap:6px}
+  .audit-time{order:2}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOADER ════════════════ -->
+<div class="page-loader" id="page-loader">
+  <div class="ld-emblem"><i class="fas fa-landmark"></i></div>
+  <div class="ld-title">ລະບົບຄັງຄວາມຮູ້</div>
+  <div class="ld-sub">Knowledge Management System v16</div>
+  <div class="ld-spin"></div>
+</div>
+
+<!-- ════════════════ TOASTS ════════════════ -->
+<div id="toasts"></div>
+
+<!-- ════════════════ CONFIRM MODAL ════════════════ -->
+<div class="overlay" id="conf-overlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-ico" style="background:var(--red-bg);color:var(--red)"><i class="fas fa-triangle-exclamation"></i></div>
+      <div><div class="modal-ttl" id="conf-title">ຢືນຢັນ</div><div class="modal-sub" id="conf-body"></div></div>
+    </div>
+    <div class="modal-act">
+      <button class="btn btn-ghost" onclick="closeConf()">ຍົກເລີກ</button>
+      <button class="btn btn-danger" id="conf-ok">ຢືນຢັນ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ USER MODAL ════════════════ -->
+<div class="overlay" id="user-overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hd">
+      <div class="modal-ico" style="background:var(--blue-pale);color:var(--blue)"><i class="fas fa-user-plus"></i></div>
+      <div>
+        <div class="modal-ttl" id="user-mtitle">ສ້າງຜູ້ໃຊ້ໃໝ່</div>
+        <div class="modal-sub">ປ້ອນຂໍ້ມູນຜູ້ໃຊ້</div>
+      </div>
+    </div>
+    <input type="hidden" id="user-uid">
+    <div class="form-grp">
+      <label class="form-lbl">Email <span class="req">*</span></label>
+      <input type="email" class="form-ctrl" id="user-email" placeholder="staff@kgs.la">
+    </div>
+    <div class="form-grp" id="user-pw-grp">
+      <label class="form-lbl">Password <span class="req">*</span></label>
+      <input type="password" class="form-ctrl" id="user-pass" placeholder="ຢ່າງໜ້ອຍ 6 ຕົວອັກສອນ">
+      <p class="form-hint">ສຳລັບການເຂົ້າສູ່ລະບົບຄັ້ງທຳອິດ. ຜູ້ໃຊ້ສາມາດປ່ຽນເອງໄດ້ພາຍຫຼັງ</p>
+    </div>
+    <div class="form-grp">
+      <label class="form-lbl">ຊື່ສະແດງ <span class="req">*</span></label>
+      <input type="text" class="form-ctrl" id="user-name" placeholder="ນາງ ສົມໃຈ">
+    </div>
+    <div class="form-grp">
+      <label class="form-lbl">Role <span class="req">*</span></label>
+      <select class="form-ctrl" id="user-role">
+        <option value="staff">Staff — ພະນັກງານທົ່ວໄປ</option>
+        <option value="manager">Manager — ຫົວໜ້າພະແນກ</option>
+        <option value="admin">Admin — ຜູ້ບໍລິຫານລະບົບ</option>
+      </select>
+    </div>
+    <div class="form-grp">
+      <label class="form-lbl">ພະແນກ</label>
+      <select class="form-ctrl" id="user-dept"><option value="">— ບໍ່ລະບຸ —</option></select>
+    </div>
+    <div class="modal-act">
+      <button class="btn btn-ghost" onclick="closeUserModal()">ຍົກເລີກ</button>
+      <button class="btn btn-primary" id="user-save" onclick="saveUser()">ບັນທຶກ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ LOGIN PAGE ════════════════ -->
+<div id="login-page">
+  <div class="lg-card">
+    <div class="lg-emblem"><i class="fas fa-landmark"></i></div>
+    <div class="lg-org">Khammany General Service</div>
+    <div class="lg-sys">KNOWLEDGE MANAGEMENT SYSTEM</div>
+    <div class="lg-div"></div>
+    <div class="lg-notice">
+      <i class="fas fa-shield-halved"></i>
+      <p>ກະລຸນາ <strong>Login ດ້ວຍ Email ບໍລິສັດ</strong><br>ຖ້າຍັງບໍ່ມີບັນຊີ ກະລຸນາຕິດຕໍ່ Admin</p>
+    </div>
+    <div class="lg-field">
+      <i class="fas fa-envelope ico"></i>
+      <input class="lg-ctrl" type="email" id="lg-email" placeholder="Email" autocomplete="username">
+    </div>
+    <div class="lg-field">
+      <i class="fas fa-lock ico"></i>
+      <input class="lg-ctrl" type="password" id="lg-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="lg-field-link"><a onclick="resetPassword()">ລືມລະຫັດຜ່ານ?</a></div>
+    <button class="lg-btn" id="lg-btn" onclick="doLogin()">
+      <i class="fas fa-right-to-bracket" style="margin-right:8px"></i>ເຂົ້າສູ່ລະບົບ
+    </button>
+    <div class="lg-err" id="lg-err"></div>
+    <div class="lg-back" style="margin-top:24px;font-size:11px;color:var(--text-mute)">
+      © 2026 Khammany General Service · v16.0
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN APP ════════════════ -->
+<div id="app">
+  <div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-emblem"><i class="fas fa-landmark"></i></div>
+      <div>
+        <div class="sb-name">ຄັງຄວາມຮູ້</div>
+        <div class="sb-sub">KGS · KMS v16</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec">ເມນູຫຼັກ</div>
+      <button class="nav-item active" onclick="showPage('browse')" data-page="browse"><i class="fas fa-house"></i> ໜ້າຫຼັກ</button>
+      <button class="nav-item" onclick="showPage('docs')" data-page="docs"><i class="fas fa-folder-open"></i> ເອກະສານທັງໝົດ <span class="nav-badge" id="nb-docs">0</span></button>
+
+      <div id="adm-nav-mgr" style="display:none">
+        <div class="nav-div"></div>
+        <div class="sb-sec">ການຈັດການ</div>
+        <button class="nav-item" onclick="showPage('upload')" data-page="upload"><i class="fas fa-cloud-arrow-up"></i> ອັບໂຫລດ</button>
+        <button class="nav-item" onclick="showPage('manage')" data-page="manage"><i class="fas fa-table-list"></i> ຈັດການເອກະສານ</button>
+      </div>
+
+      <div id="adm-nav-admin" style="display:none">
+        <div class="nav-div"></div>
+        <div class="sb-sec">ຜູ້ດູແລລະບົບ</div>
+        <button class="nav-item" onclick="showPage('users')" data-page="users"><i class="fas fa-users-gear"></i> ຜູ້ໃຊ້ <span class="nav-badge" id="nb-users">0</span></button>
+        <button class="nav-item" onclick="showPage('depts')" data-page="depts"><i class="fas fa-sitemap"></i> ພະແນກ</button>
+        <button class="nav-item" onclick="showPage('audit')" data-page="audit"><i class="fas fa-clipboard-list"></i> Audit Log</button>
+      </div>
+    </nav>
+    <div class="sb-foot">
+      <div class="u-chip staff" id="sb-chip">U</div>
+      <div class="u-info">
+        <div class="u-name" id="sb-uname">ກຳລັງໂຫລດ...</div>
+        <span class="u-tag staff" id="sb-utag">STAFF</span>
+      </div>
+      <button class="sb-logout" onclick="doLogout()" title="ອອກຈາກລະບົບ">
+        <i class="fas fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="top-hdr">
+      <button class="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <div class="hdr-info">
+        <div class="hdr-title" id="hdr-title">ໜ້າຫຼັກ</div>
+        <div class="hdr-crumb" id="hdr-crumb">ລະບົບຄັງຄວາມຮູ້ KGS</div>
+      </div>
+      <div class="hdr-sep"></div>
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="ຄົ້ນຫາເອກະສານ..." id="srch-in" oninput="onSearch(this.value)">
+      </div>
+      <div class="hdr-actions">
+        <div class="rt-badge off" id="rt-badge">
+          <div class="rt-dot"></div>
+          <span id="rt-lbl">ກຳລັງເຊື່ອມ...</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ════════ BROWSE PAGE ════════ -->
+      <div id="page-browse">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-ico si-blue"><i class="fas fa-file-lines"></i></div><div><div class="stat-val" id="st-total">0</div><div class="stat-lbl">ເອກະສານທີ່ເຫັນໄດ້</div></div></div>
+          <div class="stat-card"><div class="stat-ico si-gold"><i class="fas fa-file-pdf"></i></div><div><div class="stat-val" id="st-pdf">0</div><div class="stat-lbl">PDF</div></div></div>
+          <div class="stat-card"><div class="stat-ico si-green"><i class="fas fa-download"></i></div><div><div class="stat-val" id="st-dl">0</div><div class="stat-lbl">ດາວໂຫລດທັງໝົດ</div></div></div>
+          <div class="stat-card"><div class="stat-ico si-red"><i class="fas fa-database"></i></div><div><div class="stat-val" id="st-size">0 B</div><div class="stat-lbl">ຂະໜາດລວມ</div></div></div>
+        </div>
+        <div class="filter-row" id="filter-row">
+          <button class="pill active" onclick="setCat('all')">ທັງໝົດ <span class="pill-n">0</span></button>
+        </div>
+        <div class="card">
+          <div class="doc-list" id="doc-list">
+            <div class="empty" style="grid-column:1/-1"><i class="fas fa-circle-notch fa-spin"></i><h3>ກຳລັງໂຫລດ...</h3></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ VIEW PAGE ════════ -->
+      <div id="page-view" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <button class="btn btn-ghost" onclick="showPage('browse')"><i class="fas fa-arrow-left"></i> ກັບ</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary" id="dl-btn" onclick="downloadCurrent()"><i class="fas fa-download"></i> ດາວໂຫລດ</button>
+        </div>
+        <div class="view-hdr">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <div class="view-fi fi-pdf" id="view-icon"></div>
+            <div style="flex:1;min-width:0">
+              <div class="view-title" id="view-name"></div>
+              <div class="view-meta">
+                <div class="view-mi"><i class="fas fa-folder"></i><span id="view-cat"></span></div>
+                <div class="view-mi"><i class="fas fa-weight-hanging"></i><span id="view-size"></span></div>
+                <div class="view-mi"><i class="fas fa-calendar-days"></i><span id="view-date"></span></div>
+                <div class="view-mi"><i class="fas fa-download"></i><span id="view-dls">0</span> ຄັ້ງ</div>
+                <div class="view-mi"><i class="fas fa-user"></i><span id="view-uploader">—</span></div>
+              </div>
+              <div class="view-desc" id="view-desc" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="preview-card" style="padding:14px">
+          <div class="view-loading" id="view-loading">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <p id="view-loading-txt">ກຳລັງໂຫລດ...</p>
+          </div>
+          <div id="pdf-pages" style="display:none;flex-direction:column;gap:6px"></div>
+          <img id="img-prev" class="prev-img" style="display:none" alt="preview">
+          <div id="no-prev" class="empty" style="display:none">
+            <i class="fas fa-file-circle-question"></i>
+            <h3>ບໍ່ສາມາດ Preview ໄດ້</h3>
+            <p>ກະລຸນາດາວໂຫລດໄຟລ໌</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ UPLOAD PAGE ════════ -->
+      <div id="page-upload" style="display:none">
+        <div style="max-width:720px">
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-ttl"><i class="fas fa-cloud-arrow-up" style="color:var(--blue);margin-right:8px"></i>ອັບໂຫລດເອກະສານ</div>
+            </div>
+            <div class="card-body">
+              <div class="form-grp">
+                <label class="form-lbl">ໝວດໝູ່ <span class="req">*</span></label>
+                <select class="form-ctrl" id="up-cat"><option value="">— ເລືອກໝວດໝູ່ —</option></select>
+              </div>
+              <div class="form-grp">
+                <label class="form-lbl">ການເຂົ້າເຖິງ <span class="req">*</span></label>
+                <select class="form-ctrl" id="up-vis">
+                  <option value="internal">Internal — ສະເພາະພະນັກງານ</option>
+                  <option value="public">Public — ທຸກຄົນເຫັນ</option>
+                  <option value="department">Department — ສະເພາະພະແນກ</option>
+                  <option value="restricted">Restricted — ສະເພາະ Manager+</option>
+                  <option value="confidential">Confidential — ສະເພາະ Admin</option>
+                </select>
+                <p class="form-hint" id="up-vis-hint">ສະເພາະຜູ້ໃຊ້ທີ່ Login ແລ້ວເຫັນໄດ້</p>
+              </div>
+              <div class="form-grp">
+                <label class="form-lbl">ພະແນກ (ສຳລັບ Department visibility)</label>
+                <select class="form-ctrl" id="up-dept"><option value="">— ບໍ່ລະບຸ —</option></select>
+              </div>
+              <div class="form-grp">
+                <label class="form-lbl">ຄຳອະທິບາຍ</label>
+                <textarea class="form-ctrl" id="up-desc" placeholder="ລາຍລະອຽດເພີ່ມເຕີມ (ບໍ່ບັງຄັບ)"></textarea>
+              </div>
+              <div class="form-grp">
+                <label class="form-lbl">ໄຟລ໌ <span class="req">*</span></label>
+                <div class="upzone" id="upzone" onclick="document.getElementById('up-file').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="onDrop(event)">
+                  <i class="fas fa-cloud-arrow-up"></i>
+                  <h3>ກົດເພື່ອເລືອກໄຟລ໌ ຫຼື ລາກວາງທີ່ນີ້</h3>
+                  <p>PDF, Word, Excel, PowerPoint, ຮູບພາບ — ສູງສຸດ 100 MB ຕໍ່ໄຟລ໌</p>
+                  <input type="file" id="up-file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*,.txt,.csv" style="display:none" onchange="addFiles(this.files)">
+                </div>
+                <div class="upqueue" id="up-queue"></div>
+              </div>
+              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+                <button class="btn btn-ghost" onclick="clearQ()">ລ້າງ</button>
+                <button class="btn btn-primary" id="up-btn" onclick="doUpload()"><i class="fas fa-upload"></i> ອັບໂຫລດ</button>
+              </div>
+              <div id="up-progress"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ MANAGE PAGE ════════ -->
+      <div id="page-manage" style="display:none">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-ttl"><i class="fas fa-table-list" style="color:var(--blue);margin-right:8px"></i>ຈັດການເອກະສານ</div>
+            <div style="font-size:12px;color:var(--text-light)" id="manage-count">0 ເອກະສານ</div>
+          </div>
+          <div class="table-wrap">
+            <table class="tbl" id="manage-tbl">
+              <thead>
+                <tr><th>ຊື່</th><th>ໝວດໝູ່</th><th>ການເຂົ້າເຖິງ</th><th>ຂະໜາດ</th><th>ອັບໂຫລດ</th><th>ດາວໂຫລດ</th><th></th></tr>
+              </thead>
+              <tbody id="manage-tb"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ USERS PAGE ════════ -->
+      <div id="page-users" style="display:none">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-ttl"><i class="fas fa-users-gear" style="color:var(--blue);margin-right:8px"></i>ຈັດການຜູ້ໃຊ້</div>
+            <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="fas fa-plus"></i> ເພີ່ມຜູ້ໃຊ້</button>
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>ຊື່ / Email</th><th>Role</th><th>ພະແນກ</th><th>ສະຖານະ</th><th>ສ້າງເມື່ອ</th><th>Last Login</th><th></th></tr>
+              </thead>
+              <tbody id="users-tb"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ DEPARTMENTS PAGE ════════ -->
+      <div id="page-depts" style="display:none">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-ttl"><i class="fas fa-sitemap" style="color:var(--blue);margin-right:8px"></i>ພະແນກ</div>
+            <button class="btn btn-primary btn-sm" onclick="addDept()"><i class="fas fa-plus"></i> ເພີ່ມພະແນກ</button>
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>ຊື່ (ລາວ)</th><th>ຊື່ (ອັງກິດ)</th><th></th></tr></thead>
+              <tbody id="depts-tb"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ AUDIT LOG PAGE ════════ -->
+      <div id="page-audit" style="display:none">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-ttl"><i class="fas fa-clipboard-list" style="color:var(--blue);margin-right:8px"></i>ບັນທຶກກິດຈະກຳ (Audit Log)</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="form-ctrl" id="audit-filter" style="height:32px;font-size:12px;padding:0 30px 0 10px;width:auto" onchange="renderAudit()">
+                <option value="">ທັງໝົດ</option>
+                <option value="login">Login</option>
+                <option value="upload">Upload</option>
+                <option value="download">Download</option>
+                <option value="view">View</option>
+                <option value="delete">Delete</option>
+                <option value="create_user">Create User</option>
+                <option value="role_change">Role Change</option>
+              </select>
+            </div>
+          </div>
+          <div id="audit-list"><div class="empty"><i class="fas fa-clock-rotate-left"></i><h3>ກຳລັງໂຫລດ...</h3></div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ⚙️ CONFIG
+═══════════════════════════════════════════════════════════ */
+const CONFIG = {
+  orgName:    "Khammany General Service",
+  systemName: "ລະບົບຄັງຄວາມຮູ້",
+  firebase: {
+    apiKey:            "AIzaSyDYdp4WbuJzzXvQ5Y4_vE-QfIFsIOD8920",
+    authDomain:        "kgs-knowledge.firebaseapp.com",
+    projectId:         "kgs-knowledge",
+    storageBucket:     "kgs-knowledge.firebasestorage.app",
+    messagingSenderId: "940586711874",
+    appId:             "1:940586711874:web:7b93466c27eedef51ba6db",
+    databaseURL:       "https://kgs-knowledge-default-rtdb.asia-southeast1.firebasedatabase.app"
+  },
+  maxFileSize: 100 * 1024 * 1024  // 100 MB
+};
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+let auth, db, storage;
+let currentUser = null;       // Firebase Auth user
+let currentProfile = null;    // /users/{uid} profile
+let allDocs = [];
+let allUsers = [];
+let allDepts = {};
+let allCats = {};
+let cats = [];
+let selCat = 'all';
+let curDoc = null, curBlobUrl = null;
+let pendingFiles = [];
+let searchQ = '';
+let auditCache = [];
+
+/* PDF.js worker */
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+firebase.initializeApp(CONFIG.firebase);
+auth    = firebase.auth();
+db      = firebase.database();
+storage = firebase.storage();
+
+/* Connection monitor */
+db.ref('.info/connected').on('value', s => {
+  const b = document.getElementById('rt-badge'), l = document.getElementById('rt-lbl');
+  if (s.val()) { b.classList.remove('off'); l.textContent = 'ເຊື່ອມຕໍ່ແລ້ວ'; }
+  else { b.classList.add('off'); l.textContent = 'ບໍ່ໄດ້ເຊື່ອມຕໍ່'; }
+});
+
+/* Auth state listener */
+auth.onAuthStateChanged(async user => {
+  hideLoader();
+  if (user) {
+    currentUser = user;
+    try {
+      const snap = await db.ref('users/' + user.uid).once('value');
+      const profile = snap.val();
+      if (!profile || profile.active === false) {
+        toast('ບັນຊີຂອງທ່ານຍັງບໍ່ໄດ້ຮັບການອະນຸມັດ ຫຼື ຖືກປິດ', 'err');
+        await auth.signOut();
+        showLogin();
+        return;
+      }
+      currentProfile = { uid: user.uid, ...profile };
+      db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
+      logAudit('login');
+      showApp();
+    } catch (err) {
+      console.error('Profile load error:', err);
+      toast('ບໍ່ສາມາດໂຫລດຂໍ້ມູນຜູ້ໃຊ້', 'err');
+      await auth.signOut();
+      showLogin();
+    }
+  } else {
+    currentUser = null;
+    currentProfile = null;
+    showLogin();
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════════════ */
+function hideLoader() {
+  const l = document.getElementById('page-loader');
+  if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 400); }
+}
+
+function showLogin() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+async function doLogin() {
+  const email = document.getElementById('lg-email').value.trim();
+  const pass = document.getElementById('lg-pass').value;
+  const err = document.getElementById('lg-err');
+  const btn = document.getElementById('lg-btn');
+
+  err.classList.remove('show');
+  if (!email || !pass) {
+    err.textContent = 'ກະລຸນາປ້ອນ Email ແລະ Password';
+    err.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ກຳລັງເຂົ້າສູ່ລະບົບ...';
+
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    document.getElementById('lg-pass').value = '';
+  } catch (e) {
+    let msg = 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ';
+    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Email ຫຼື Password ບໍ່ຖືກຕ້ອງ';
+    else if (e.code === 'auth/user-not-found') msg = 'ບໍ່ພົບບັນຊີນີ້';
+    else if (e.code === 'auth/too-many-requests') msg = 'ພະຍາຍາມຫຼາຍຄັ້ງເກີນໄປ. ກະລຸນາລໍຖ້າ';
+    else if (e.code === 'auth/network-request-failed') msg = 'ບໍ່ສາມາດເຊື່ອມຕໍ່ Internet';
+    err.textContent = msg;
+    err.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-right-to-bracket" style="margin-right:8px"></i>ເຂົ້າສູ່ລະບົບ';
+  }
+}
+
+async function resetPassword() {
+  const email = document.getElementById('lg-email').value.trim();
+  if (!email) { toast('ກະລຸນາປ້ອນ Email ກ່ອນ', 'warn'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    toast('ສົ່ງລິ້ງປ່ຽນລະຫັດໄປ ' + email + ' ແລ້ວ', 'ok');
+  } catch (e) {
+    toast('ບໍ່ສຳເລັດ: ' + (e.message || ''), 'err');
+  }
+}
+
+async function doLogout() {
+  if (!confirm('ອອກຈາກລະບົບ?')) return;
+  logAudit('logout');
+  await auth.signOut();
+  toast('ອອກຈາກລະບົບແລ້ວ', 'ok');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP INIT
+═══════════════════════════════════════════════════════════ */
+function showApp() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  updateSidebarUser();
+  updateNavByRole();
+
+  bindRealtimeData();
+  loadDepartments();
+  loadCategories();
+  if (isAdmin()) loadUsers();
+  showPage('browse');
+}
+
+function isAdmin()   { return currentProfile?.role === 'admin'; }
+function isManager() { return currentProfile?.role === 'manager' || isAdmin(); }
+
+function updateSidebarUser() {
+  const p = currentProfile;
+  const chip = document.getElementById('sb-chip');
+  const name = document.getElementById('sb-uname');
+  const tag = document.getElementById('sb-utag');
+  const initial = (p.displayName || p.email || 'U').charAt(0).toUpperCase();
+  chip.textContent = initial;
+  chip.className = 'u-chip ' + p.role;
+  name.textContent = p.displayName || p.email;
+  tag.textContent = p.role.toUpperCase();
+  tag.className = 'u-tag ' + p.role;
+}
+
+function updateNavByRole() {
+  document.getElementById('adm-nav-mgr').style.display = isManager() ? 'block' : 'none';
+  document.getElementById('adm-nav-admin').style.display = isAdmin() ? 'block' : 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REALTIME DATA BINDING
+═══════════════════════════════════════════════════════════ */
+function bindRealtimeData() {
+  db.ref('documents').on('value', snap => {
+    const data = snap.val() || {};
+    allDocs = Object.entries(data).map(([id, d]) => ({ id, ...d }))
+              .filter(canViewDoc)
+              .sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
+    buildCats();
+    updateStats();
+    renderList();
+    if (document.getElementById('page-manage').style.display !== 'none') renderManageTable();
+  });
+
+  if (isAdmin()) {
+    db.ref('audit').limitToLast(500).on('value', snap => {
+      const data = snap.val() || {};
+      auditCache = Object.entries(data).map(([id, e]) => ({ id, ...e }))
+                   .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      if (document.getElementById('page-audit').style.display !== 'none') renderAudit();
+    });
+  }
+}
+
+/* ── ກວດສິດເບິ່ງເອກະສານ ── */
+function canViewDoc(doc) {
+  if (!doc.visibility) return false;
+  const role = currentProfile.role;
+  switch (doc.visibility) {
+    case 'public':       return true;
+    case 'internal':     return currentProfile.active !== false;
+    case 'restricted':   return role === 'admin' || role === 'manager';
+    case 'confidential': return role === 'admin';
+    case 'department':   return role === 'admin' || doc.department === currentProfile.department;
+    default: return false;
+  }
+}
+
+function loadDepartments() {
+  db.ref('departments').on('value', snap => {
+    allDepts = snap.val() || {};
+    populateDepartmentSelects();
+    if (document.getElementById('page-depts').style.display !== 'none') renderDepts();
+  });
+}
+
+function loadCategories() {
+  db.ref('categories').on('value', snap => {
+    allCats = snap.val() || {};
+    populateCategorySelects();
+  });
+}
+
+function loadUsers() {
+  db.ref('users').on('value', snap => {
+    const data = snap.val() || {};
+    allUsers = Object.entries(data).map(([uid, u]) => ({ uid, ...u }));
+    document.getElementById('nb-users').textContent = allUsers.length;
+    if (document.getElementById('page-users').style.display !== 'none') renderUsers();
+  });
+}
+
+function populateDepartmentSelects() {
+  const opts = '<option value="">— ບໍ່ລະບຸ —</option>' +
+    Object.entries(allDepts).map(([id, d]) => `<option value="${id}">${esc(d.name)}</option>`).join('');
+  ['user-dept', 'up-dept'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const cur = el.value;
+      el.innerHTML = opts;
+      el.value = cur;
+    }
+  });
+}
+
+function populateCategorySelects() {
+  const opts = '<option value="">— ເລືອກໝວດໝູ່ —</option>' +
+    Object.values(allCats).map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+  const sel = document.getElementById('up-cat');
+  if (sel) { const cur = sel.value; sel.innerHTML = opts; sel.value = cur; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGES NAVIGATION
+═══════════════════════════════════════════════════════════ */
+function showPage(pg) {
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+  const map = {
+    browse: ['ໜ້າຫຼັກ', 'ລະບົບຄັງຄວາມຮູ້ KGS'],
+    docs:   ['ເອກະສານທັງໝົດ', 'ເບິ່ງ ແລະ ດາວໂຫລດ'],
+    view:   ['ເບິ່ງເອກະສານ', ''],
+    upload: ['ອັບໂຫລດ', 'ເພີ່ມເອກະສານໃໝ່'],
+    manage: ['ຈັດການເອກະສານ', 'ແກ້ໄຂ ແລະ ລຶບ'],
+    users:  ['ຈັດການຜູ້ໃຊ້', 'ສ້າງ ແລະ ກຳນົດສິດ'],
+    depts:  ['ພະແນກ', 'ຈັດການໂຄງສ້າງອົງກອນ'],
+    audit:  ['Audit Log', 'ບັນທຶກກິດຈະກຳທັງໝົດ']
+  };
+  const m = map[pg] || ['', ''];
+  document.getElementById('hdr-title').textContent = m[0];
+  document.getElementById('hdr-crumb').textContent = m[1];
+  const pageId = (pg === 'docs') ? 'page-browse' : 'page-' + pg;
+  const el = document.getElementById(pageId);
+  if (el) el.style.display = 'block';
+
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page === pg));
+  closeSidebar();
+
+  if (pg === 'manage')      renderManageTable();
+  else if (pg === 'users')  renderUsers();
+  else if (pg === 'depts')  renderDepts();
+  else if (pg === 'audit')  renderAudit();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BROWSE / LIST
+═══════════════════════════════════════════════════════════ */
+function buildCats() {
+  cats = [...new Set(allDocs.map(d => d.category).filter(Boolean))].sort();
+  const row = document.getElementById('filter-row');
+  let html = `<button class="pill ${selCat==='all'?'active':''}" onclick="setCat('all')">ທັງໝົດ <span class="pill-n">${allDocs.length}</span></button>`;
+  cats.forEach(c => {
+    const n = allDocs.filter(d => d.category === c).length;
+    html += `<button class="pill ${selCat===c?'active':''}" onclick="setCat('${esc(c)}')">${esc(c)} <span class="pill-n">${n}</span></button>`;
+  });
+  row.innerHTML = html;
+}
+
+function setCat(c) { selCat = c; buildCats(); renderList(); }
+function onSearch(q) { searchQ = q.toLowerCase().trim(); renderList(); }
+
+function filtered() {
+  return allDocs.filter(d => {
+    if (selCat !== 'all' && d.category !== selCat) return false;
+    if (searchQ) {
+      const blob = (d.name + ' ' + (d.category||'') + ' ' + (d.description||'')).toLowerCase();
+      if (!blob.includes(searchQ)) return false;
+    }
+    return true;
+  });
+}
+
+function updateStats() {
+  document.getElementById('st-total').textContent = allDocs.length;
+  document.getElementById('st-pdf').textContent = allDocs.filter(d => d.type === 'application/pdf').length;
+  document.getElementById('st-dl').textContent = allDocs.reduce((s, d) => s + (d.downloads || 0), 0);
+  const totalSize = allDocs.reduce((s, d) => s + (d.size || 0), 0);
+  document.getElementById('st-size').textContent = humanSize(totalSize);
+  document.getElementById('nb-docs').textContent = allDocs.length;
+}
+
+function renderList() {
+  const list = document.getElementById('doc-list');
+  const docs = filtered();
+  if (docs.length === 0) {
+    list.innerHTML = '<div class="empty" style="grid-column:1/-1"><i class="fas fa-folder-open"></i><h3>ບໍ່ມີເອກະສານ</h3><p>ຍັງບໍ່ມີເອກະສານທີ່ກົງກັບເງື່ອນໄຂ</p></div>';
+    return;
+  }
+  list.innerHTML = docs.map(d => `
+    <div class="doc-card" onclick="viewDoc('${d.id}')">
+      <div class="doc-top">
+        <div class="doc-icon ${fileClass(d.type)}"><i class="${fileIcon(d.type)}"></i></div>
+        <div style="flex:1;min-width:0"><div class="doc-name">${esc(d.name)}</div></div>
+      </div>
+      <div class="doc-meta">
+        <span><i class="fas fa-folder"></i> ${esc(d.category || '—')}</span>
+        <span><i class="fas fa-weight-hanging"></i> ${humanSize(d.size || 0)}</span>
+        <span><i class="fas fa-download"></i> ${d.downloads || 0}</span>
+      </div>
+      <div class="doc-vis vis-${d.visibility}">${visLabel(d.visibility)}</div>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW DOCUMENT
+═══════════════════════════════════════════════════════════ */
+async function viewDoc(id) {
+  const d = allDocs.find(x => x.id === id);
+  if (!d) { toast('ບໍ່ພົບເອກະສານ', 'err'); return; }
+  curDoc = d;
+  if (curBlobUrl) { URL.revokeObjectURL(curBlobUrl); curBlobUrl = null; }
+
+  showPage('view');
+  const icon = document.getElementById('view-icon');
+  icon.className = 'view-fi ' + fileClass(d.type);
+  icon.innerHTML = `<i class="${fileIcon(d.type)}"></i>`;
+  document.getElementById('view-name').textContent = d.name;
+  document.getElementById('view-cat').textContent = d.category || '—';
+  document.getElementById('view-size').textContent = humanSize(d.size || 0);
+  document.getElementById('view-date').textContent = formatDate(d.uploadedAt);
+  document.getElementById('view-dls').textContent = d.downloads || 0;
+
+  const uploader = allUsers.find(u => u.uid === d.uploadedBy);
+  document.getElementById('view-uploader').textContent = uploader ? (uploader.displayName || uploader.email) : '—';
+
+  if (d.description) {
+    document.getElementById('view-desc').style.display = 'block';
+    document.getElementById('view-desc').textContent = d.description;
+  } else {
+    document.getElementById('view-desc').style.display = 'none';
+  }
+
+  logAudit('view', d.id, d.name);
+
+  document.getElementById('view-loading').style.display = 'block';
+  document.getElementById('pdf-pages').style.display = 'none';
+  document.getElementById('img-prev').style.display = 'none';
+  document.getElementById('no-prev').style.display = 'none';
+
+  try {
+    const url = await storage.ref(d.storagePath).getDownloadURL();
+    if (d.type === 'application/pdf') {
+      await renderPdfPreview(url);
+    } else if (d.type && d.type.startsWith('image/')) {
+      const img = document.getElementById('img-prev');
+      img.onload = () => document.getElementById('view-loading').style.display = 'none';
+      img.src = url;
+      img.style.display = 'block';
+    } else {
+      document.getElementById('view-loading').style.display = 'none';
+      document.getElementById('no-prev').style.display = 'block';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('view-loading').style.display = 'none';
+    document.getElementById('no-prev').style.display = 'block';
+    toast('ບໍ່ສາມາດໂຫລດໄຟລ໌: ' + err.message, 'err');
+  }
+}
+
+async function renderPdfPreview(url) {
+  try {
+    const pdf = await pdfjsLib.getDocument(url).promise;
+    const container = document.getElementById('pdf-pages');
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    document.getElementById('view-loading').style.display = 'none';
+
+    const maxPages = Math.min(pdf.numPages, 10);
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const wrap = document.createElement('div');
+      wrap.className = 'pdf-page-wrap';
+      wrap.innerHTML = `<div class="pdf-page-num">ໜ້າ ${i}/${pdf.numPages}</div>`;
+      wrap.insertBefore(canvas, wrap.firstChild);
+      container.appendChild(wrap);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    }
+
+    if (pdf.numPages > maxPages) {
+      const note = document.createElement('div');
+      note.style.cssText = 'text-align:center;padding:14px;color:var(--text-light);font-size:12px';
+      note.textContent = `ສະແດງ ${maxPages} ໜ້າທຳອິດ. ດາວໂຫລດເພື່ອເບິ່ງທັງໝົດ (${pdf.numPages} ໜ້າ)`;
+      container.appendChild(note);
+    }
+  } catch (e) {
+    document.getElementById('view-loading').style.display = 'none';
+    document.getElementById('no-prev').style.display = 'block';
+  }
+}
+
+async function downloadCurrent() {
+  if (!curDoc) return;
+  try {
+    const url = await storage.ref(curDoc.storagePath).getDownloadURL();
+    const a = document.createElement('a');
+    a.href = url; a.download = curDoc.name; a.target = '_blank';
+    document.body.appendChild(a); a.click(); a.remove();
+    db.ref('documents/' + curDoc.id + '/downloads').transaction(v => (v || 0) + 1);
+    logAudit('download', curDoc.id, curDoc.name);
+    toast('ດາວໂຫລດສຳເລັດ', 'ok');
+  } catch (err) {
+    toast('ບໍ່ສາມາດດາວໂຫລດ: ' + err.message, 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UPLOAD
+═══════════════════════════════════════════════════════════ */
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upzone').classList.remove('drag-over');
+  addFiles(e.dataTransfer.files);
+}
+
+function addFiles(fl) {
+  const arr = Array.from(fl).filter(f => {
+    if (f.size > CONFIG.maxFileSize) {
+      toast(`ໄຟລ໌ "${f.name}" ໃຫຍ່ເກີນ 100 MB`, 'err');
+      return false;
+    }
+    return true;
+  });
+  pendingFiles = pendingFiles.concat(arr);
+  renderQueue();
+}
+
+function removeQ(i) { pendingFiles.splice(i, 1); renderQueue(); }
+function clearQ()   { pendingFiles = []; renderQueue(); }
+
+function renderQueue() {
+  const q = document.getElementById('up-queue');
+  if (pendingFiles.length === 0) { q.innerHTML = ''; return; }
+  q.innerHTML = pendingFiles.map((f, i) => `
+    <div class="upitem">
+      <div class="upitem-icon ${fileClass(f.type)}"><i class="${fileIcon(f.type)}"></i></div>
+      <div class="upitem-info">
+        <div class="upitem-name">${esc(f.name)}</div>
+        <div class="upitem-size">${humanSize(f.size)}</div>
+      </div>
+      <button class="upitem-rm" onclick="removeQ(${i})"><i class="fas fa-xmark"></i></button>
+    </div>`).join('');
+}
+
+async function doUpload() {
+  if (!isManager()) { toast('ບໍ່ມີສິດອັບໂຫລດ', 'err'); return; }
+
+  const cat = document.getElementById('up-cat').value;
+  const vis = document.getElementById('up-vis').value;
+  const dept = document.getElementById('up-dept').value;
+  const desc = document.getElementById('up-desc').value.trim();
+
+  if (!cat) { toast('ກະລຸນາເລືອກໝວດໝູ່', 'warn'); return; }
+  if (pendingFiles.length === 0) { toast('ກະລຸນາເລືອກໄຟລ໌', 'warn'); return; }
+  if (vis === 'department' && !dept) { toast('ກະລຸນາເລືອກພະແນກ', 'warn'); return; }
+
+  const btn = document.getElementById('up-btn');
+  btn.disabled = true;
+  const progContainer = document.getElementById('up-progress');
+  progContainer.innerHTML = '';
+
+  let okCount = 0, errCount = 0;
+
+  for (const file of pendingFiles) {
+    const cardId = 'p-' + Math.random().toString(36).slice(2, 9);
+    progContainer.insertAdjacentHTML('beforeend', `
+      <div class="progress-card" id="${cardId}">
+        <div class="progress-info">
+          <div class="progress-name">${esc(file.name)}</div>
+          <div class="progress-pct" id="${cardId}-pct">0%</div>
+        </div>
+        <div class="upbar"><div class="upbar-fill" id="${cardId}-bar"></div></div>
+      </div>`);
+
+    try {
+      const docId = 'doc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      const ext = file.name.split('.').pop().toLowerCase();
+      const deptSlug = (dept || 'general').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      const storagePath = `files/${deptSlug}/${docId}.${ext}`;
+
+      const ref = storage.ref(storagePath);
+      const task = ref.put(file, { contentType: file.type, customMetadata: { uploadedBy: currentUser.uid } });
+
+      await new Promise((resolve, reject) => {
+        task.on('state_changed',
+          snap => {
+            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+            const bar = document.getElementById(cardId + '-bar');
+            const pctEl = document.getElementById(cardId + '-pct');
+            if (bar) bar.style.width = pct + '%';
+            if (pctEl) pctEl.textContent = pct + '%';
+          },
+          err => reject(err),
+          () => resolve()
+        );
+      });
+
+      await db.ref('documents/' + docId).set({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        category: cat,
+        visibility: vis,
+        department: dept || null,
+        description: desc || null,
+        storagePath: storagePath,
+        uploadedBy: currentUser.uid,
+        uploadedAt: Date.now(),
+        downloads: 0
+      });
+
+      logAudit('upload', docId, file.name);
+      okCount++;
+    } catch (e) {
+      console.error(e);
+      errCount++;
+      const card = document.getElementById(cardId);
+      if (card) card.style.borderColor = 'var(--red)';
+      toast(`"${file.name}": ${e.message}`, 'err');
+    }
+  }
+
+  btn.disabled = false;
+
+  if (okCount > 0) toast(`ອັບໂຫລດສຳເລັດ ${okCount} ໄຟລ໌`, 'ok');
+  if (okCount > 0 && errCount === 0) {
+    pendingFiles = []; renderQueue();
+    document.getElementById('up-desc').value = '';
+    setTimeout(() => progContainer.innerHTML = '', 2000);
+    showPage('browse');
+  }
+}
+
+/* Visibility hint update */
+document.addEventListener('change', e => {
+  if (e.target.id === 'up-vis') {
+    const hints = {
+      public: 'ທຸກຄົນທີ່ Login ແລ້ວເຫັນໄດ້',
+      internal: 'ສະເພາະພະນັກງານ KGS ທີ່ Active',
+      department: 'ສະເພາະຄົນໃນພະແນກທີ່ກຳນົດ',
+      restricted: 'ສະເພາະ Manager ແລະ Admin',
+      confidential: 'ສະເພາະ Admin ເທົ່ານັ້ນ'
+    };
+    document.getElementById('up-vis-hint').textContent = hints[e.target.value] || '';
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   MANAGE
+═══════════════════════════════════════════════════════════ */
+function renderManageTable() {
+  const tb = document.getElementById('manage-tb');
+  const myDocs = isAdmin() ? allDocs : allDocs.filter(d => d.uploadedBy === currentUser.uid);
+  document.getElementById('manage-count').textContent = myDocs.length + ' ເອກະສານ';
+
+  if (myDocs.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty"><i class="fas fa-folder-open"></i><h3>ບໍ່ມີເອກະສານ</h3></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = myDocs.map(d => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px"><div class="doc-icon ${fileClass(d.type)}" style="width:32px;height:32px;font-size:14px"><i class="${fileIcon(d.type)}"></i></div><div style="font-weight:500">${esc(d.name)}</div></div></td>
+      <td>${esc(d.category || '—')}</td>
+      <td><span class="doc-vis vis-${d.visibility}">${visLabel(d.visibility)}</span></td>
+      <td>${humanSize(d.size || 0)}</td>
+      <td>${formatDate(d.uploadedAt)}</td>
+      <td>${d.downloads || 0}</td>
+      <td><div class="tbl-act">
+        <button onclick="viewDoc('${d.id}')" title="ເບິ່ງ"><i class="fas fa-eye"></i></button>
+        <button class="dl" onclick="downloadDoc('${d.id}')" title="ດາວໂຫລດ"><i class="fas fa-download"></i></button>
+        ${isAdmin() || d.uploadedBy === currentUser.uid ? `<button class="del" onclick="confirmDelDoc('${d.id}')" title="ລຶບ"><i class="fas fa-trash"></i></button>` : ''}
+      </div></td>
+    </tr>`).join('');
+}
+
+async function downloadDoc(id) {
+  const d = allDocs.find(x => x.id === id);
+  if (!d) return;
+  try {
+    const url = await storage.ref(d.storagePath).getDownloadURL();
+    const a = document.createElement('a');
+    a.href = url; a.download = d.name; a.target = '_blank';
+    document.body.appendChild(a); a.click(); a.remove();
+    db.ref('documents/' + id + '/downloads').transaction(v => (v || 0) + 1);
+    logAudit('download', id, d.name);
+  } catch (e) { toast('ບໍ່ສຳເລັດ', 'err'); }
+}
+
+function confirmDelDoc(id) {
+  const d = allDocs.find(x => x.id === id);
+  if (!d) return;
+  showConfirm('ລຶບເອກະສານ?', `"${d.name}" ຈະຖືກລຶບຖາວອນ`, async () => {
+    try {
+      await storage.ref(d.storagePath).delete().catch(() => null);
+      await db.ref('documents/' + id).remove();
+      logAudit('delete', id, d.name);
+      toast('ລຶບສຳເລັດ', 'ok');
+    } catch (e) { toast('ບໍ່ສຳເລັດ: ' + e.message, 'err'); }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   USER MANAGEMENT (ADMIN ONLY)
+═══════════════════════════════════════════════════════════ */
+function renderUsers() {
+  if (!isAdmin()) return;
+  const tb = document.getElementById('users-tb');
+  tb.innerHTML = allUsers.map(u => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px"><div class="u-chip ${u.role}" style="width:32px;height:32px;font-size:13px">${(u.displayName||u.email||'?').charAt(0).toUpperCase()}</div><div><div style="font-weight:500">${esc(u.displayName||'—')}</div><div style="font-size:11px;color:var(--text-light)">${esc(u.email)}</div></div></div></td>
+      <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+      <td>${esc(allDepts[u.department]?.name || '—')}</td>
+      <td>${u.active ? '<span class="status-active">Active</span>' : '<span class="status-inactive">Inactive</span>'}</td>
+      <td style="font-size:11.5px;color:var(--text-light)">${formatDate(u.createdAt)}</td>
+      <td style="font-size:11.5px;color:var(--text-light)">${u.lastLogin ? formatDate(u.lastLogin) : '—'}</td>
+      <td><div class="tbl-act">
+        <button onclick="editUser('${u.uid}')" title="ແກ້ໄຂ"><i class="fas fa-pen"></i></button>
+        <button onclick="toggleUserActive('${u.uid}')" title="${u.active ? 'ປິດ' : 'ເປີດ'}"><i class="fas fa-${u.active ? 'ban' : 'check'}"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openUserModal() {
+  if (!isAdmin()) { toast('ບໍ່ມີສິດ', 'err'); return; }
+  document.getElementById('user-mtitle').textContent = 'ສ້າງຜູ້ໃຊ້ໃໝ່';
+  document.getElementById('user-uid').value = '';
+  document.getElementById('user-email').value = '';
+  document.getElementById('user-pass').value = '';
+  document.getElementById('user-name').value = '';
+  document.getElementById('user-role').value = 'staff';
+  document.getElementById('user-dept').value = '';
+  document.getElementById('user-pw-grp').style.display = 'block';
+  document.getElementById('user-email').disabled = false;
+  document.getElementById('user-overlay').classList.add('open');
+}
+
+function editUser(uid) {
+  const u = allUsers.find(x => x.uid === uid);
+  if (!u) return;
+  document.getElementById('user-mtitle').textContent = 'ແກ້ໄຂຜູ້ໃຊ້';
+  document.getElementById('user-uid').value = uid;
+  document.getElementById('user-email').value = u.email;
+  document.getElementById('user-email').disabled = true;
+  document.getElementById('user-name').value = u.displayName || '';
+  document.getElementById('user-role').value = u.role || 'staff';
+  document.getElementById('user-dept').value = u.department || '';
+  document.getElementById('user-pw-grp').style.display = 'none';
+  document.getElementById('user-overlay').classList.add('open');
+}
+
+function closeUserModal() {
+  document.getElementById('user-overlay').classList.remove('open');
+}
+
+async function saveUser() {
+  const uid = document.getElementById('user-uid').value;
+  const email = document.getElementById('user-email').value.trim();
+  const pass = document.getElementById('user-pass').value;
+  const name = document.getElementById('user-name').value.trim();
+  const role = document.getElementById('user-role').value;
+  const dept = document.getElementById('user-dept').value;
+
+  if (!email || !name) { toast('ກະລຸນາປ້ອນຂໍ້ມູນໃຫ້ຄົບ', 'warn'); return; }
+
+  const btn = document.getElementById('user-save');
+  btn.disabled = true;
+
+  try {
+    if (uid) {
+      // Edit existing
+      const old = allUsers.find(u => u.uid === uid);
+      await db.ref('users/' + uid).update({
+        displayName: name, role: role, department: dept || null
+      });
+      if (old && old.role !== role) logAudit('role_change', uid, `${old.role} → ${role}`);
+      else logAudit('update_user', uid, name);
+      toast('ບັນທຶກສຳເລັດ', 'ok');
+    } else {
+      // Create new
+      if (!pass || pass.length < 6) { toast('Password ຢ່າງໜ້ອຍ 6 ຕົວ', 'warn'); btn.disabled = false; return; }
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      const newUid = cred.user.uid;
+      await db.ref('users/' + newUid).set({
+        email: email, displayName: name, role: role,
+        department: dept || null, active: true, createdAt: Date.now()
+      });
+      logAudit('create_user', newUid, name);
+      toast('ສ້າງຜູ້ໃຊ້ສຳເລັດ', 'ok');
+      // ⚠️ Note: createUserWithEmailAndPassword switches the current Firebase auth user to the new user
+      // We need to sign back in as the admin. This is a known Firebase limitation.
+      // Best practice: use Firebase Admin SDK on backend, but for now we'll alert the admin.
+      toast('ໝາຍເຫດ: ກະລຸນາ Login ໃໝ່ດ້ວຍບັນຊີ Admin', 'warn');
+      setTimeout(async () => { await auth.signOut(); }, 2500);
+    }
+    closeUserModal();
+  } catch (e) {
+    let msg = e.message || 'ບໍ່ສຳເລັດ';
+    if (e.code === 'auth/email-already-in-use') msg = 'Email ນີ້ມີຢູ່ແລ້ວ';
+    else if (e.code === 'auth/invalid-email') msg = 'Email ບໍ່ຖືກຕ້ອງ';
+    else if (e.code === 'auth/weak-password') msg = 'Password ບໍ່ປອດໄພພໍ';
+    toast(msg, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function toggleUserActive(uid) {
+  if (uid === currentUser.uid) { toast('ບໍ່ສາມາດປິດບັນຊີຕົນເອງ', 'warn'); return; }
+  const u = allUsers.find(x => x.uid === uid);
+  if (!u) return;
+  await db.ref('users/' + uid + '/active').set(!u.active);
+  logAudit('update_user', uid, (!u.active ? 'activated' : 'deactivated'));
+  toast(!u.active ? 'ເປີດໃຊ້ງານແລ້ວ' : 'ປິດໃຊ້ງານແລ້ວ', 'ok');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DEPARTMENTS
+═══════════════════════════════════════════════════════════ */
+function renderDepts() {
+  if (!isAdmin()) return;
+  const tb = document.getElementById('depts-tb');
+  const entries = Object.entries(allDepts);
+  if (entries.length === 0) {
+    tb.innerHTML = '<tr><td colspan="4"><div class="empty"><i class="fas fa-sitemap"></i><h3>ບໍ່ມີພະແນກ</h3></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = entries.map(([id, d]) => `
+    <tr>
+      <td><code style="font-size:11px;background:var(--bg);padding:2px 8px;border-radius:4px">${esc(id)}</code></td>
+      <td>${esc(d.name)}</td>
+      <td>${esc(d.nameEn || '—')}</td>
+      <td><div class="tbl-act">
+        <button class="del" onclick="confirmDelDept('${id}')"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`).join('');
+}
+
+async function addDept() {
+  if (!isAdmin()) return;
+  const name = prompt('ຊື່ພະແນກ (ລາວ):');
+  if (!name) return;
+  const nameEn = prompt('ຊື່ພະແນກ (ອັງກິດ, ບໍ່ບັງຄັບ):') || '';
+  const id = (nameEn || name).toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30);
+  try {
+    await db.ref('departments/' + id).set({ name, nameEn: nameEn || null });
+    toast('ເພີ່ມສຳເລັດ', 'ok');
+  } catch (e) { toast('ບໍ່ສຳເລັດ', 'err'); }
+}
+
+function confirmDelDept(id) {
+  showConfirm('ລຶບພະແນກ?', allDepts[id]?.name, async () => {
+    await db.ref('departments/' + id).remove();
+    toast('ລຶບສຳເລັດ', 'ok');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUDIT LOG
+═══════════════════════════════════════════════════════════ */
+function logAudit(action, targetId, targetName) {
+  if (!currentUser) return;
+  const entry = {
+    action, userId: currentUser.uid,
+    userEmail: currentUser.email,
+    timestamp: Date.now(),
+    userAgent: navigator.userAgent.substring(0, 200)
+  };
+  if (targetId) entry.targetId = targetId;
+  if (targetName) entry.targetName = targetName;
+  db.ref('audit').push(entry).catch(e => console.warn('Audit log failed:', e));
+}
+
+function renderAudit() {
+  if (!isAdmin()) return;
+  const filter = document.getElementById('audit-filter').value;
+  const list = filter ? auditCache.filter(a => a.action === filter) : auditCache;
+  const el = document.getElementById('audit-list');
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty"><i class="fas fa-clock-rotate-left"></i><h3>ບໍ່ມີບັນທຶກ</h3></div>';
+    return;
+  }
+  const actionLabels = {
+    login: 'ເຂົ້າສູ່ລະບົບ', logout: 'ອອກ', upload: 'ອັບໂຫລດ',
+    download: 'ດາວໂຫລດ', view: 'ເບິ່ງ', delete: 'ລຶບ', update: 'ແກ້ໄຂ',
+    create_user: 'ສ້າງຜູ້ໃຊ້', update_user: 'ແກ້ໄຂຜູ້ໃຊ້', role_change: 'ປ່ຽນ Role'
+  };
+  const actionIcons = {
+    login: 'fa-right-to-bracket', logout: 'fa-right-from-bracket',
+    upload: 'fa-upload', download: 'fa-download', view: 'fa-eye',
+    delete: 'fa-trash', update: 'fa-pen', create_user: 'fa-user-plus',
+    update_user: 'fa-user-pen', role_change: 'fa-user-shield'
+  };
+  el.innerHTML = list.slice(0, 200).map(a => {
+    const user = allUsers.find(u => u.uid === a.userId);
+    const userName = user ? (user.displayName || user.email) : (a.userEmail || a.userId);
+    return `<div class="audit-row">
+      <div class="audit-time">${formatDateTime(a.timestamp)}</div>
+      <div>
+        <div class="audit-act"><div class="audit-icon act-${a.action}"><i class="fas ${actionIcons[a.action]||'fa-circle'}"></i></div><span>${actionLabels[a.action]||a.action}</span></div>
+        <div style="font-size:11.5px;color:var(--text-light);margin-top:3px">${esc(userName)}${a.targetName ? ' · ' + esc(a.targetName) : ''}</div>
+      </div>
+      <div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════ */
+function showConfirm(title, body, onOk) {
+  document.getElementById('conf-title').textContent = title;
+  document.getElementById('conf-body').textContent = body || '';
+  document.getElementById('conf-overlay').classList.add('open');
+  const btn = document.getElementById('conf-ok');
+  btn.onclick = () => { closeConf(); onOk(); };
+}
+function closeConf() { document.getElementById('conf-overlay').classList.remove('open'); }
+
+function toast(msg, type) {
+  const wrap = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  const icons = { ok: 'fa-circle-check', err: 'fa-circle-xmark', warn: 'fa-triangle-exclamation' };
+  t.innerHTML = `<i class="fas ${icons[type]||'fa-circle-info'}"></i><span>${esc(msg)}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function humanSize(b) {
+  if (!b) return '0 B';
+  const u = ['B','KB','MB','GB'];
+  let i = 0;
+  while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+  return b.toFixed(i === 0 ? 0 : 1) + ' ' + u[i];
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function formatDateTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return formatDate(ts) + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+function visLabel(v) {
+  return ({ public:'Public', internal:'Internal', restricted:'Restricted', confidential:'Confidential', department:'Department' })[v] || v;
+}
+
+function fileClass(type) {
+  if (!type) return 'fi-other';
+  if (type === 'application/pdf') return 'fi-pdf';
+  if (type.startsWith('image/')) return 'fi-img';
+  if (type.includes('word') || type.includes('document')) return 'fi-doc';
+  if (type.includes('sheet') || type.includes('excel')) return 'fi-xls';
+  return 'fi-other';
+}
+
+function fileIcon(type) {
+  if (!type) return 'fas fa-file';
+  if (type === 'application/pdf') return 'fas fa-file-pdf';
+  if (type.startsWith('image/')) return 'fas fa-file-image';
+  if (type.includes('word') || type.includes('document')) return 'fas fa-file-word';
+  if (type.includes('sheet') || type.includes('excel')) return 'fas fa-file-excel';
+  if (type.includes('presentation') || type.includes('powerpoint')) return 'fas fa-file-powerpoint';
+  if (type.includes('text') || type.includes('csv')) return 'fas fa-file-lines';
+  return 'fas fa-file';
+}
+</script>
+</body>
+</html>
